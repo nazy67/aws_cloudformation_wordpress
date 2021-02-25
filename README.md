@@ -93,4 +93,4 @@ The last resource is Route 53, Hosted Zone Name will be available from your host
 
 ## Diagram
 
-<img src="aws_diagram.png" alt="aws" width="850" height="450">
+<img src="aws_cfn_wordpress/images/aws_diagram.png" alt="aws" width="800" height="450">
