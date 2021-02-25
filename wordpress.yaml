@@ -1,0 +1,620 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template is reusable
+
+###  DEFINE PARAMETERS  ###
+
+Parameters: 
+  #  VPC Parameters
+  CidrBlock: 
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.0.0/16
+    Description: VPC CIDR Block (eg 10.0.0.0/16)
+    Type: String
+
+  AvailabilityZone1:
+    Description: The AvailabilityZone to use for the first subnet
+    Type: AWS::EC2::AvailabilityZone::Name
+  AvailabilityZone2:
+    Description: The AvailabilityZone to use for the second subnet
+    Type: AWS::EC2::AvailabilityZone::Name
+    
+  PublicSubnetCIDR1:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.1.0/24
+    Description: VPC CIDR Block for the Public Subnet (eg 10.0.0.0/24)
+    Type: String
+  PublicSubnetCIDR2:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.2.0/24
+    Description: VPC CIDR Block for the Public Subnet (eg 10.0.0.0/24)
+    Type: String  
+
+  PrivateSubnetCIDR1:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.11.0/24
+    Description: VPC CIDR Block for the Public Subnet (eg 10.0.0.0/24)
+    Type: String
+  PrivateSubnetCIDR2:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.12.0/24
+    Description: VPC CIDR Block for the Public Subnet (eg 10.0.0.0/24)
+    Type: String    
+
+  # RDS DataBase Parameters
+  DataBaseName: 
+    Type: String
+    Default: "" # wordpressdb
+    Description:  Enter the name of your DataBase
+  DBUserName: 
+    NoEcho: 'true'
+    Type: String
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    Description: must begin with a letter and contain only alphanumeric characters.
+  DBUserPassword: 
+    NoEcho: 'true'
+    Type: String
+    MinLength: '8'
+    MaxLength: '41'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    Description: must contain only alphanumeric characters.  
+  DataBaseInstanceId:  
+    Default: mydbinstance
+    Type: String
+    MinLength: '1'
+    MaxLength: '63'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    Description: Must begin with a letter and must not end with a hyphen or contain two consecutive hyphens.
+  DataBaseInstanceClass:  
+    Type: String
+    Default: db.t2.micro
+    AllowedValues: [db.t2.micro, db.t2.medium, db.t2.small]
+    Description: must select a valid database instance type.
+  DBAllocatedStorage: 
+    Default: '20'
+    Type: Number
+    MinValue: '5'
+    MaxValue: '1024'
+    Description: must be between 20 and 65536 GiB.   
+  StorageType: 
+    Type: String
+    Default: gp2  
+
+  # Parameters for WordPress host
+  WebInstanceType:  
+    Type: String   
+    Default: t2.micro
+    AllowedValues: [t2.micro, t2.small, t2.medium]
+    Description: Please choose a valid instance type. 
+  VolumeSize:  
+    Type: Number
+    Default: 20
+    Description: Please choose a valid Number
+    AllowedValues: [20, 30, 40, 50]  
+  SSHKeyName:
+    Description: 'The name of your local machine's ssh-key'
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Default: ""
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to WordPress host
+    Type: String
+    MinLength: 9
+    MaxLength: 18
+    Default: 0.0.0.0/0
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.    
+
+  # Parameters for ELB and Target group
+  TargetGrpName: 
+    Description: Enter your Target Group Name  
+    Type: String
+    Default: "" # my-tg  
+  MyALBName: 
+    Description: Enter your Elastic Load Balancer Name  
+    Type: String
+    Default: "" # my-alb 
+  AppLoadbalancerSslCertArn:
+    Description: Enter your SSL Certificate
+    Type: String
+    Default: "" 
+
+  # Parameters for Route53  
+  WpWebDomain:
+    Description: "A reference to the Webserver Fully Qualified Domain Name domain name www.example.com"
+    Type: "String" 
+    Default: ""      
+  WpHostedZone:
+    Description: "A reference to the Hosted Zone example.com"
+    Type: "String"
+    Default: ""  
+  WPWebALBHostedZoneId: 
+    Description: "A reference to the Webserver ELB (Canonical) Hosted Zone ID "
+    Type: String
+    Default: Z35SXDOTRQ7X7K 
+    AllowedValues: 
+      - Z35SXDOTRQ7X7K # us-east-1
+      - Z3AADJGX6KTTL2 # us-east-2
+
+  # Tags  
+  PubSubTagName1:
+    Type: String
+    Default: PublicSubnet1
+  PubSubTagName2:
+    Type: String
+    Default: PublicSubnet2
+  PrivSubTagName1:
+    Type: String
+    Default: PrivateSubnet1
+  PrivSubTagName2:
+    Type: String
+    Default: PrivateSubnet2
+  IntGatewayTagName:
+    Type: String
+    Default: InternetGateway 
+  NatGatewayTagName:
+    Type: String
+    Default: NatGateway      
+  AlbSecGroupTagName:
+    Type: String
+    Default: ELBSecurityGroup 
+  WebServSecGrpTagName:
+    Type: String
+    Default: WordPressHostSg
+  RdsSecGrpTagName:
+    Type: String
+    Default: RDSSecurityGroup
+  WordPressTagName:
+    Type: String
+    Default: WordPressInstance
+  RdsDbTagName: 
+    Type: String
+    Default: MyRDSDB 
+
+###  MAPPING  ###
+
+Mappings:
+  AWSInstanceType2Arch:    
+    t2.micro:
+      Arch : HVM64  
+    t2.small: 
+      Arch : HVM64  
+    t2.medium:  
+      Arch : HVM64  
+  
+  AWSRegionArch2AMI:
+    us-east-1: 
+      HVM64: ami-04d29b6f966df1537 
+    us-east-2: 
+      HVM64: ami-09558250a3419e7d0
+
+###  DEFINE RESOURCES ###
+
+Resources: 
+  # VPC
+  PubPrivateVPC: 
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Ref CidrBlock
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'  
+      InstanceTenancy: 'default' #  or dedicated
+      Tags:
+      - Key: Name
+        Value:
+          Ref: AWS::StackName
+
+  # Public Subnet 1
+  PublicSubnet1: 
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref PubPrivateVPC
+      AvailabilityZone: !Select [ '0', !GetAZs ]
+      CidrBlock: !Ref PublicSubnetCIDR1
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+      - Key: Name
+        Value: !Ref PubSubTagName1
+
+  # Public Subnet 2
+  PublicSubnet2: 
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref PubPrivateVPC
+      AvailabilityZone: !Select [ '1', !GetAZs ]    
+      CidrBlock: !Ref PublicSubnetCIDR2
+      MapPublicIpOnLaunch: 'true'
+      Tags:
+      - Key: Name
+        Value: !Ref PubSubTagName2
+
+  # Private Subnet 1
+  PrivateSubnet1: 
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref PubPrivateVPC
+      AvailabilityZone: !Select [ '0', !GetAZs ]
+      CidrBlock: !Ref PrivateSubnetCIDR1
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: Name
+        Value: !Ref PrivSubTagName1
+
+  # Private Subnet 2
+  PrivateSubnet2: 
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref PubPrivateVPC
+      AvailabilityZone: !Select [ '1', !GetAZs ]
+      CidrBlock: !Ref PrivateSubnetCIDR2
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: Name
+        Value: !Ref PrivSubTagName2
+
+  # Internet Gateway 
+  InternetGateway: 
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref IntGatewayTagName
+
+  GatewayToInternet:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref PubPrivateVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # Public Route Table 
+  PublicRouteTable:         
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref PubPrivateVPC
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: GatewayToInternet
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  # Assosiation of Public Subnets with a Public RT
+  PublicSubnet1RouteTableAssociation: 
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+  PublicSubnet2RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  # NAT Gateway 
+  NatGateway: 
+    Type: "AWS::EC2::NatGateway"
+    DependsOn: NatPublicIP
+    Properties: 
+      AllocationId: !GetAtt NatPublicIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Ref NatGatewayTagName
+  NatPublicIP: # Elastic IP is a Static IP address for NAT Gateway
+    Type: "AWS::EC2::EIP"
+    DependsOn: PubPrivateVPC
+    Properties:
+      Domain: vpc
+
+  # Private Route Table 
+  PrivateRouteTable: 
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref PubPrivateVPC
+  PrivateRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  # Assosiation of Private Subnets with a Private RT
+  PrivateSubnet1RouteTableAssociation: 
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+  PrivateSubnet2RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable      
+
+  # Security Groups for ALB, Wordpress host and RDS      
+  ELBSecurityGroup: 
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow HTTP and HTTPS to everywhere"
+      VpcId: !Ref PubPrivateVPC
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 0.0.0.0/0
+      Tags: 
+        - Key: Name
+          Value: !Ref AlbSecGroupTagName
+
+  # Wordpress host Security Group
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow port 80 to ALB sg, 3306 to RDS sg"
+      VpcId: !Ref PubPrivateVPC
+      Tags: 
+        - Key: Name
+          Value: !Ref WebServSecGrpTagName     
+  MySecGroupIngressHTTP:  
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties: 
+      GroupId: !Ref WebServerSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !Ref ELBSecurityGroup
+  MySecGroupIngressSSH:  
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties: 
+      GroupId: !Ref WebServerSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref SSHLocation      
+  MySecGroupIngressRDS: 
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties: 
+      GroupId: !Ref WebServerSecurityGroup  
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      SourceSecurityGroupId: !Ref RDSSecurityGroup
+
+  # Security Group for RDS   
+  RDSSecurityGroup: 
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow port 3306 to WordPress Security Group"
+      VpcId: !Ref PubPrivateVPC
+      Tags: 
+        - Key: Name
+          Value: !Ref RdsSecGrpTagName
+  MySecurityGrpIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref RDSSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      SourceSecurityGroupId: !Ref WebServerSecurityGroup 
+
+  # WordPress Web Host
+  WordpressWebInstance: 
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:  
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: WebInstanceType
+          - Arch
+      KeyName: !Ref SSHKeyName
+      InstanceType: !Ref WebInstanceType
+      SubnetId: !Ref  PublicSubnet1                                  
+      SecurityGroupIds:
+      - !Ref WebServerSecurityGroup
+      UserData:
+        Fn::Base64: 
+          !Sub |
+              #!/bin/bash -e
+              sudo hostnamectl set-hostname wordpress-web
+              sudo amazon-linux-extras install -y php7.2
+              sudo yum install -y httpd 
+              sudo systemctl start httpd
+              sudo systemctl enable httpd
+              wget https://wordpress.org/latest.tar.gz
+              tar -xzf latest.tar.gz
+              sudo yum install php-gd -y
+              sudo yum install mysql -y 
+              sudo systemctl restart httpd
+              sudo cp -r wordpress/* /var/www/html
+              sudo chown -R apache:apache /var/www/html
+              sudo systemctl restart httpd
+      BlockDeviceMappings:
+        -
+          DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: !Ref VolumeSize
+      Tags: 
+        - Key: Name
+          Value: !Ref WordPressTagName
+  
+  #  RDS Database Subnet Group
+  RDSDBSubnetGroup: 
+    Type: AWS::RDS::DBSubnetGroup
+    Properties: 
+      DBSubnetGroupDescription: DataBase Subnet Group
+      DBSubnetGroupName: RDSDBPrivateSubnet
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: DBSubnetGroupName
+
+  # RDS DB Instance
+  MyRDSDB:  
+    Type: AWS::RDS::DBInstance
+    Properties:
+      VPCSecurityGroups: 
+        - !Ref RDSSecurityGroup
+      DBSubnetGroupName: !Ref RDSDBSubnetGroup
+      AllocatedStorage: !Ref DBAllocatedStorage
+      DBInstanceClass:  !Ref DataBaseInstanceClass
+      Engine: MariaDB
+      EngineVersion: 10.4.8
+      #StorageEncrypted: true
+      DBInstanceIdentifier:  !Ref DataBaseInstanceId
+      MasterUsername: !Ref DBUserName
+      MasterUserPassword: !Ref DBUserPassword
+      DBName: !Ref DataBaseName
+      Port: 3306
+      BackupRetentionPeriod: 0   
+      PubliclyAccessible: false  
+      StorageType: !Ref StorageType
+      Tags: 
+        - Key: Name
+          Value: !Ref RdsDbTagName 
+
+  # Target Group
+  EC2TargetGroup: 
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: 
+      - MyALB
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: "/"
+      Port: 80
+      HealthCheckPort: "traffic-port"
+      Protocol: HTTP
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+      HealthCheckEnabled: true
+      TargetType: instance
+      Targets:
+      - Id:
+          Ref: WordpressWebInstance
+      Matcher:
+        HttpCode: '301'
+      Name: !Ref TargetGrpName 
+      TargetGroupAttributes:
+      - Key: deregistration_delay.timeout_seconds
+        Value: '20'
+      VpcId: !Ref PubPrivateVPC
+
+  # HTTPS Listener 
+  myHTTPSlListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref AppLoadbalancerSslCertArn
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref EC2TargetGroup
+      LoadBalancerArn: !Ref MyALB
+      Port: '443'
+      Protocol: HTTPS
+
+  # HTTP Listener 
+  myHTTPListener: 
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - MyALB
+      - EC2TargetGroup
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupARN:
+            Ref: EC2TargetGroup
+      LoadBalancerARN:
+          Ref: MyALB
+      Port: 80
+      Protocol: HTTP
+  
+  # Application Load Balancer
+  MyALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing # or internal
+      Subnets:
+      - Ref: PublicSubnet1
+      - Ref: PublicSubnet2
+      SecurityGroups:
+      - Ref: ELBSecurityGroup
+
+  # Route 53
+  Route53:
+    Type: "AWS::Route53::RecordSetGroup"
+    Properties:
+      HostedZoneName: !Sub "${WpHostedZone}"
+      Comment: Zone apex alias targeted to Application Load Balancer
+      RecordSets:
+      - Name: !Sub "${WpWebDomain}"
+        Type: 'A'
+        AliasTarget:
+          HostedZoneId: !Ref "WPWebALBHostedZoneId"
+          DNSName: !GetAtt MyALB.DNSName 
+
+###  DEFINE OUTPUTS  ###
+
+Outputs:
+  MyVPC:
+    Description: " VPC with 2 private and 2 public subnets"
+    Value: !Ref PubPrivateVPC        
+  PrivateSubnet1:
+    Description: " Private Subnet AZ1"
+    Value: !Ref PrivateSubnet1
+  PrivateSubnet2:
+    Description: " Private Subnet AZ2"
+    Value: !Ref PrivateSubnet2
+  PubicSubnet1:
+    Description: " Public Subnet AZ1"
+    Value: !Ref PublicSubnet1
+  PubicSubnet2:
+    Description: " Public Subnet AZ2"
+    Value: !Ref PublicSubnet2
+  ELBSecurityGroup:
+    Description: "ELB Security Group"
+    Value: !Ref ELBSecurityGroup
+  WebServerSecurityGroup:
+    Description: "WordPress Web Server's Security Group"
+    Value: !Ref WebServerSecurityGroup
+  RDSSecurityGroup:
+    Description: "RDS Security Group"
+    Value: !Ref RDSSecurityGroup
+  WordpressWebInstance:
+    Description: WordPress Web Server Id
+    Value: !Ref WordpressWebInstance                
+  RDSDataBaseName:
+    Description:  My RDS Database Name
+    Value: !Ref DataBaseName
+  RDSDataIdentifier:
+    Description:  My RDS Database Identifier
+    Value: !Ref MyRDSDB
+  RDSDBSubnetGroup: 
+    Description: RDS DB Subnet Group
+    Value: !Ref RDSDBSubnetGroup
+  RDSEndpoint:
+    Description: RDS databases Endpoint
+    Value: !GetAtt MyRDSDB.Endpoint.Address      
+  myELBDNSName:
+    Description: 'Webserver ELB DNS Name A Record'
+    Value: !GetAtt MyALB.DNSName
+  EC2TargetGroup:
+    Description: 'My EC2 Target Group'
+    Value: !Ref TargetGrpName
+  MyLoadBalancerArn:
+    Description: 'Application Load Balancer'
+    Value: !Ref MyALB
+  WebRoute53:
+    Description: A reference to Route 53
+    Value: !Ref "Route53"
