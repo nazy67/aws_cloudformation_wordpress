@@ -1,4 +1,4 @@
 # Ignore images folder
 
-images
+images*
 *.png
