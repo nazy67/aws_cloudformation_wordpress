@@ -93,7 +93,7 @@ Parameters:
     Description: Please choose a valid Number
     AllowedValues: [20, 30, 40, 50]  
   SSHKeyName:
-    Description: 'The name of your local machine's ssh-key'
+    Description: 'The name of your local machine ssh-key'
     Type: 'AWS::EC2::KeyPair::KeyName'
     Default: ""
   SSHLocation:
@@ -109,7 +109,7 @@ Parameters:
   TargetGrpName: 
     Description: Enter your Target Group Name  
     Type: String
-    Default: "" # my-tg  
+    Default: "" #my-tg  
   MyALBName: 
     Description: Enter your Elastic Load Balancer Name  
     Type: String
@@ -555,10 +555,10 @@ Resources:
   Route53:
     Type: "AWS::Route53::RecordSetGroup"
     Properties:
-      HostedZoneName: !Sub "${WpHostedZone}"
+      HostedZoneName: !Sub "${WpHostedZone}."
       Comment: Zone apex alias targeted to Application Load Balancer
       RecordSets:
-      - Name: !Sub "${WpWebDomain}"
+      - Name: !Sub "${WpWebDomain}."
         Type: 'A'
         AliasTarget:
           HostedZoneId: !Ref "WPWebALBHostedZoneId"

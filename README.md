@@ -1,5 +1,45 @@
 # Demo: Deploying a Secure WordPress on AWS using CloudFormation.
 
+## Prerequisites
+
+- AWS account
+- SSL Certificate
+- SSH key
+- Domain Name
+
+## Resouces
+
+### Network
+
+- Virtual Private Cloud (VPC)
+  - Internet Gateway 
+  - Nat Gateway
+  - 2 Public Subnets
+  - 2 Private Subnets 
+  - Public Route Table
+  - Private Route Table
+ 
+- Security Groups
+  - EC2 Security Group
+  - RDS Security Group
+  - ALB Security Group
+
+- Application Load Balancer
+
+### Application
+
+- EC2 Instance
+  - WordPress (Frontend)
+- RDS
+  - Database (Backend)
+
+### DNS
+- Route 53
+
+## Diagram
+
+<img src="aws_diagram.png" alt="aws" width="800" height="500">
+
 ## Description
 <p>
 This template is reusable it will provision VPC with CIDR 10.0.0.0/16, with  2 Public with CIDR 10.0.1.0/24 & 10.0.2.0/24 and 2 private subnets with CIDR 10.0.11.0/24 & 10.0.11.0/24.
@@ -60,37 +100,16 @@ Target group created with health check enabled, since our target type is "instan
 <p>
 The last resource is Route 53, Hosted Zone Name will be available from your hosted zone. Alias target will be copied from  Hosted ZoneID and DNS name. Keep in mind that Hosted Zone Id and Alias Hosted Zone Id is different in every region. The following link has all Regions, Route 53 Hosted Zone IDs (Application Load Balancers, Classic Load Balancers) and Route 53 Hosted Zone IDs (Network Load Balancers).  
 [AWS Documentation - Hosted Zone IDs](https://docs.aws.amazon.com/general/latest/gr/elb.html)
+Another important thing to remember to keep in mind that, always put . after your domain name, its in AWS  documentation. As it's shown on lines 558 and 561.
 </p>
 
-## Resouces
+## Notes 
+<p>
+The following  plugins are required to be installed and activated in the WordPress: 
+- JSM force ssl
+  - JSM's Force HTTP to HTTPS (SSL) – Simple, Safe, Reliable, and Fast!
+- Simple 301 redirect 
+  - Redirection
 
-### Network
-
-- Virtual Private Cloud (VPC)
-  - Internet Gateway 
-  - Nat Gateway
-  - 2 Public Subnets
-  - 2 Private Subnets 
-  - Public Route Table
-  - Private Route Table
- 
-- Security Groups
-  - EC2 Security Group
-  - RDS Security Group
-  - ALB Security Group
-
-- Application Load Balancer
-
-### Application
-
-- EC2 Instance
-  - WordPress (Frontend)
-- RDS
-  - Database (Backend)
-
-### DNS
-- Route 53
-
-## Diagram
-
-<img src="aws_diagram.png" alt="aws" width="800" height="500">
+These plugins helps you to make your application secure , without redirectiong  your HTTP/80 listener to HTTPS/443.
+</p>
