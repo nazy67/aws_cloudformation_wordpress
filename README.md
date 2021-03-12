@@ -97,11 +97,10 @@ Target group created with health check enabled, since our target type is "instan
 </p>
 
 ## Route 53
-<p>
+
 The last resource is Route 53, Hosted Zone Name will be available from your hosted zone. Alias target will be copied from  Hosted ZoneID and DNS name. Keep in mind that Hosted Zone Id and Alias Hosted Zone Id is different in every region. The following link has all Regions, Route 53 Hosted Zone IDs (Application Load Balancers, Classic Load Balancers) and Route 53 Hosted Zone IDs (Network Load Balancers).  
 [AWS Documentation - Hosted Zone IDs](https://docs.aws.amazon.com/general/latest/gr/elb.html)
 Another important thing to remember to keep in mind that, always put . after your domain name, its in AWS  documentation. As it's shown on lines 558 and 561.
-</p>
 
 ## Notes 
 <p>
