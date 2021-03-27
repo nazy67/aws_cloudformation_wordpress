@@ -497,7 +497,7 @@ Resources:
       VpcId: !Ref PubPrivateVPC
 
   # HTTPS Listener 
-  myHTTPSlListener:
+  myListenerRule1:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       Certificates:
@@ -510,7 +510,7 @@ Resources:
       Protocol: HTTPS
 
   # HTTP Listener 
-  myHTTPListener: 
+  myListenerRule2: 
     Type: AWS::ElasticLoadBalancingV2::Listener
     DependsOn:
       - MyALB
@@ -518,10 +518,9 @@ Resources:
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupARN:
+          TargetGroupArn:
             Ref: EC2TargetGroup
-      LoadBalancerARN:
-          Ref: MyALB
+      LoadBalancerArn: !Ref MyALB
       Port: 80
       Protocol: HTTP
   
