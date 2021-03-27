@@ -93,7 +93,7 @@ RDS Security group public access will be false for security reason. For learning
 ## Target Group and Application Load Balancer. 
 
 <p>
-Target group created with health check enabled, since our target type is "instance" in our case it will be WordPress host, also two Listeners HTTP and HTTPS both of them forwarded to target group. Application Load Balancer's scheme is internet facing (because we want our customers to see our website), VPC with public subnets  will be chosen otherwise it won’t work. Because only public subnets have internet, if you choose private subnet it will keep hitting your NAT gateway and eventually it will drop it. Enter your ACMcertificate to make your website secure if you have one, if not you need to create it. 
+Target group created with health check enabled, since our target type is "instance" in our case it will be WordPress host, also two Listener rules HTTP and HTTPS both of them forwarded to target group. Application Load Balancer's scheme is internet facing (because we want our customers to see our website), VPC with public subnets  will be chosen otherwise it won’t work. Because only public subnets have internet, if you choose private subnet it will keep hitting your NAT gateway and eventually it will drop it. Enter your ACMcertificate to make your website secure if you have one, if not you need to create it. 
 </p>
 
 ## Route 53
