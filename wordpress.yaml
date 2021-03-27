@@ -173,19 +173,11 @@ Parameters:
 
 ###  MAPPING  ###
 
-Mappings:
-  AWSInstanceType2Arch:    
-    t2.micro:
-      Arch : HVM64  
-    t2.small: 
-      Arch : HVM64  
-    t2.medium:  
-      Arch : HVM64  
-  
-  AWSRegionArch2AMI:
-    us-east-1: 
-      HVM64: ami-04d29b6f966df1537 
-    us-east-2: 
+Mappings: 
+  RegionMap:
+    us-east-1:
+      HVM64: ami-04d29b6f966df1537
+    us-east-2:
       HVM64: ami-09558250a3419e7d0
 
 ###  DEFINE RESOURCES ###
