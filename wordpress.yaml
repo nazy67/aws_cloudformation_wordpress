@@ -398,16 +398,9 @@ Resources:
   WordpressWebInstance: 
     Type: AWS::EC2::Instance
     Properties:
-      ImageId:  
-        Fn::FindInMap:
-        - AWSRegionArch2AMI
-        - Ref: AWS::Region
-        - Fn::FindInMap:
-          - AWSInstanceType2Arch
-          - Ref: WebInstanceType
-          - Arch
-      KeyName: !Ref SSHKeyName
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
       InstanceType: !Ref WebInstanceType
+      KeyName: !Ref SSHKeyName
       SubnetId: !Ref  PublicSubnet1                                  
       SecurityGroupIds:
       - !Ref WebServerSecurityGroup
